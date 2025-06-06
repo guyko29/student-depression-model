@@ -1,0 +1,276 @@
+\documentclass{article} % This command is used to set the type of document you are working on such as an article, book, or presenation
+
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{geometry}
+\usepackage{lmodern}  % Optional, improves font rendering
+\usepackage{mathtools}  % Optional, for extended math symbols
+
+
+
+
+\title{Predicting Student Depression Using Machine Learning\\ [1.2ex]
+\Large Research Question: \\ [1.2ex]
+\normalsize What personal, academic, and lifestyle-related factors best predict depression among university students, and how accurately can machine learning models identify students at risk based on these features ?} 
+\author{\small Amit Dvash, Yuval Livshits, Guy Korenfeld, Tom Badash, Einav Cohen}
+\date{\small \today}
+        
+\begin{document}
+
+\maketitle
+    
+\section{Methodology}
+
+In this project, we aimed to predict depression levels among students using machine learning models. The dataset included responses from 27,901 students, each represented by 18
+attributes, including demographic details (e.g., age, gender, city), academic and
+work-related pressures, CGPA, study and job satisfaction, sleep duration, dietary
+habits, degree pursued, suicidal thoughts, work/study hours, financial stress,
+family history of mental illness, and a binary indicator of depression status (1 for
+depressed, 0 for not depressed).
+
+To assess which modeling approach would provide the most reliable prediction, we implemented and compared several machine learning models:
+
+\begin{enumerate}
+    \item Random Forest Classifier
+    \item XGBoost Classifier
+    \item Neural Network (Keras Sequential Model)
+    \item Ensemble Model (Manual Soft Voting of RF + XGBoost + NN)
+\end{enumerate}
+
+
+\subsection*{Problem-Solving Pipeline}
+
+\subsubsection*{Data Analysis}
+
+To better understand the structure and potential issues in the dataset, we performed exploratory data analysis (EDA) across all features.
+
+\begin{itemize}
+    \item \textbf{Missing Values:} The dataset is largely complete, with only three missing entries in the \textit{Financial Stress} column, which were imputed based on the mode.
+    
+    \item \textbf{Categorical Features:} Several categorical variables showed wide variation in cardinality. For instance:
+    \begin{itemize}
+        \item \textit{City} had over 50 unique values.
+        \item \textit{Degree} covered a diverse range of academic programs.
+        \item \textit{Gender}, \textit{Family History of Mental Illness}, and \textit{Suicidal Thoughts} were binary or low-cardinality features.
+    \end{itemize}
+    
+    \item \textbf{Target Variable Distribution:} Approximately 60\% of students were labeled as depressed, indicating a moderate class imbalance. This was considered when selecting models and evaluation metrics.
+
+    \item \textbf{Demographic Insights:}
+    \begin{itemize}
+        \item The dataset included a broad age range, with most students between 18 and 35.
+        \item Gender distribution was moderately imbalanced, with a higher number of male students.
+        \item Cities such as Kalyan, Srinagar, and Hyderabad had the highest student representation.
+    \end{itemize}
+
+    \item \textbf{Feature Correlations with Depression:} We found strong and meaningful associations between depression and several key variables:
+    \begin{itemize}
+        \item \textit{Academic Pressure:} Depression prevalence increased sharply with higher academic pressure ratings.
+        \item \textit{Financial Stress:} Students reporting high financial stress were far more likely to experience depression.
+        \item \textit{Dietary Habits:} Those with unhealthy diets had a significantly higher likelihood of being classified as depressed.
+        \item \textit{Study Satisfaction:} Students reporting low satisfaction with their academic experience were more likely to report depression.
+        \item \textit{Family History of Mental Illness:} Students with a family history showed elevated rates of depression.
+        \item \textit{Suicidal Thoughts:} Among the strongest predictors — students who reported suicidal thoughts overwhelmingly belonged to the depressed class.
+    \end{itemize}
+\end{itemize}
+
+\subsubsection*{Data Preprocessing}
+
+We performed a series of preprocessing steps to clean and standardize the dataset for machine learning models.
+
+\begin{itemize}
+    \item \textbf{Missing Values:} The only column with missing values was \textit{Financial Stress}, which had three missing entries. These were imputed using the column's mean value to preserve distributional integrity.
+
+    \item \textbf{Sleep Duration:} Originally stored as textual ranges (e.g., ``5-6 hours''), this column was mapped to numeric midpoints:
+    \begin{itemize}
+        \item ``Less than 5 hours'' $\rightarrow$ 4.5
+        \item ``5-6 hours'' $\rightarrow$ 5.5
+        \item ``7-8 hours'' $\rightarrow$ 7.5
+        \item ``More than 8 hours'' $\rightarrow$ 9
+    \end{itemize}
+    Rows with missing sleep duration values were removed.
+
+    \item \textbf{Dietary Habits:} The categorical values ``Healthy'', ``Moderate'', and ``Unhealthy'' were mapped to scores of 3, 2, and 1 respectively. Missing entries were dropped.
+
+    \item \textbf{Binary Variables:} 
+    \begin{itemize}
+        \item The columns \textit{Suicidal Thoughts} and \textit{Family History of Mental Illness} were originally in ``Yes''/``No'' format and were mapped to 1 and 0 respectively.
+        \item \textit{Gender} was encoded as 1 for male and 0 for female.
+    \end{itemize}
+
+    \item \textbf{City Encoding:} The \textit{City} column was encoded using frequency counts to preserve ordinal representation while retaining model compatibility.
+
+    \item \textbf{Degree Encoding:} The wide range of academic degrees was categorized into three levels:
+    \begin{itemize}
+        \item ``Higher Secondary'' for students reporting ``Class 12''
+        \item ``Graduated'' for Bachelor's level programs (e.g., BSc, B.Tech)
+        \item ``Post Graduated'' for Master's or higher programs (e.g., MSc, M.Tech, PhD)
+    \end{itemize}
+    These categories were then mapped to ordinal values: 1, 2, and 3 respectively.
+\end{itemize}
+
+    
+\subsubsection*{Feature Engineering}
+
+To enhance model performance and incorporate domain knowledge, we performed feature engineering on several attributes:
+
+\begin{itemize}
+    \item \textbf{Lifestyle Score:}  
+    We created a composite feature called \textit{Lifestyle Score} to represent a student's overall well-being. It combines three health-related variables:
+    \begin{itemize}
+        \item \textbf{Sleep Duration} (positive weight): Indicates sleep health.
+        \item \textbf{Dietary Habits} (positive weight): Reflects nutritional quality.
+        \item \textbf{Financial Stress} (negative weight): A known stressor linked to mental health.
+    \end{itemize}
+
+    The formula used:
+    \[
+    \text{Lifestyle Score} = 0.4 \cdot \text{Sleep Duration} + 1.5 \cdot \text{Dietary Habits} - 0.8 \cdot \text{Financial Stress}
+    \]
+
+    \item \textbf{Final Dataset Validation:}  
+    After all preprocessing and feature engineering steps, we verified that the final dataset contained no missing values across any column.
+\end{itemize}
+
+    
+\subsubsection*{Model Building}
+
+Three primary machine learning models were trained and evaluated:
+
+\begin{itemize}
+    \item \textbf{Random Forest:} A tree-based ensemble model trained using stratified data split and optimized with grid search over key parameters like tree depth, number of estimators, and feature subset selection.
+    
+    \item \textbf{XGBoost:} A gradient-boosted tree model trained with random search over learning rate, subsample ratio, max depth, and number of estimators. Evaluation metrics demonstrated strong generalization capacity.
+    
+    \item \textbf{Neural Network:} A Keras-based sequential deep learning model with dense layers, dropout regularization, and binary cross-entropy loss. The model used early stopping to prevent overfitting and was trained on scaled input data.
+
+    \item \textbf{Ensemble:} We implemented a manual soft voting ensemble combining predicted probabilities from Random Forest, XGBoost, and the Neural Network. The average of the predicted probabilities from all three models yielded a final prediction.
+\end{itemize}
+
+\subsubsection*{Parameters Tuning}
+
+Each model underwent hyperparameter tuning using appropriate strategies:
+
+\begin{itemize}
+    \item \textbf{Random Forest:} GridSearchCV with 3-fold cross-validation was applied to tune the number of estimators, tree depth, minimum samples per split/leaf, and max features.
+    \item \textbf{XGBoost:} RandomizedSearchCV was used with 20 iterations across hyperparameters including learning rate, subsample, column sampling, tree depth, and regularization term ($\gamma$).
+    \item \textbf{Neural Network:} Architectural tuning included experimenting with layer sizes, dropout rates, and optimizer configurations. Early stopping was used to halt training once validation loss plateaued.
+\end{itemize}
+
+\subsubsection*{Pipeline Automation}
+
+To ensure reproducibility and maintainability, the entire ML pipeline was built to support:
+
+\begin{itemize}
+    \item Stratified splitting for consistent class distribution.
+    \item Scalable training on structured NumPy/Pandas input.
+    \item Unified API for fitting, predicting, and evaluating across all models.
+    \item Seamless integration of preprocessing, model training, evaluation, and ensembling in a single, reusable notebook structure.
+\end{itemize}
+
+\subsection*{Why This is the Best Solution}
+
+\begin{enumerate}
+    \setcounter{enumi}{0}
+    \item The pipeline is \textbf{modular}, allowing individual components like data cleaning, model tuning, and evaluation to be updated independently.
+    \item It is fully \textbf{reproducible}, with fixed random seeds and consistent splits.
+    \item The structure is highly \textbf{scalable}, with support for large datasets and multiple modeling strategies.
+    \item Our approach \textbf{outperforms baseline models} by combining strengths of tree-based and deep learning models using ensemble voting.
+    \item The final ensemble model is \textbf{deployment-ready}, offering a robust balance between performance and efficiency.
+\end{enumerate}
+
+
+\subsection*{Software/System Implementation}
+
+\begin{itemize}
+    \item \textbf{Programming Language:} Python 3.9.13
+    \item \textbf{Environment:} Visual Studio Code.
+    \item \textbf{Version Control:} Codebase managed via GitHub.
+\end{itemize}
+
+\subsection*{Engineering Attributes}
+
+\begin{itemize}
+    \item \textbf{Dependencies:} Listed in \texttt{requirements.txt}
+    \item \textbf{Reproducibility:} Fixed seeds and ensured consistent data splits.
+    \item \textbf{Modularity:} Although implemented in a single notebook, the code was organized into clearly separated sections: data preprocessing, feature engineering, model training, and evaluation — enabling easy maintenance and readability.
+    \item \textbf{Scalability \& Efficiency:} The notebook was tested on a dataset with nearly 28,000 samples and ran efficiently using standard hardware, demonstrating practical scalability for medium-sized real-world datasets.
+\end{itemize}
+
+\section{Evaluation}
+
+We evaluated our models using both performance metrics and interpretability methods to compare model effectiveness and gain insights into feature contributions.
+
+\subsection*{Evaluation Metrics}
+
+We used the following key metrics for model comparison:
+
+\begin{itemize}
+    \item \textbf{Accuracy:} Overall correctness of the model.
+    \item \textbf{F1-Score:} Harmonic mean of precision and recall; especially important in slightly imbalanced datasets.
+    \item \textbf{ROC-AUC:} Area under the ROC curve, showing true positive vs. false positive rates.
+    \item \textbf{Precision-Recall AUC:} Better reflects performance on imbalanced data.
+    \item \textbf{Confusion Matrices:} Provide a breakdown of TP, FP, FN, and TN to understand the types of prediction errors.
+\end{itemize}
+
+The neural network achieved the highest AUC (0.93), followed by the ensemble model (0.91). XGBoost and Random Forest models both achieved 0.80–0.82 AUC. 
+
+\begin{itemize}
+    \item \textbf{Neural Network:} Highest accuracy and F1-score (0.85), strong recall, and lowest false negatives.
+    \item \textbf{Ensemble (Soft Voting):} Balanced performance with strong precision and recall (accuracy 0.82).
+    \item \textbf{Random Forest:} Solid baseline, precision 0.84, recall 0.79, accuracy 0.85.
+    \item \textbf{XGBoost:} Similar performance to RF with slightly lower recall.
+\end{itemize}
+
+\subsection*{ROC and Precision-Recall Curves}
+
+The ROC and PR curves reinforce the neural network’s superiority in distinguishing between classes. The ensemble model also demonstrates high separability, indicating value in combining model predictions.
+
+\subsection*{Feature Importance (Permutation-Based)}
+
+We computed permutation-based feature importances to understand which variables contributed most to model predictions.
+
+\begin{itemize}
+    \item Across all models, \textbf{Suicidal Thoughts} was the most predictive feature.
+    \item \textbf{Lifestyle Score}, derived from sleep, diet, and stress, ranked highly in RF and XGBoost.
+    \item \textbf{Academic Pressure} had particularly high importance in the Neural Network model.
+    \item \textbf{Family History of Mental Illness}, \textbf{Financial Stress}, and \textbf{Study Satisfaction} also had meaningful influence across models.
+\end{itemize}
+
+\subsection*{Neural Network Wrapper for Interpretability}
+
+To enable permutation importance with the Keras model, we implemented a custom wrapper class \texttt{PredictAsBinary} that conforms to the \texttt{BaseEstimator} and \texttt{ClassifierMixin} interfaces from \texttt{sklearn}. This allowed us to extract reliable importance values while preserving the NN’s probabilistic output and threshold-based prediction logic.
+
+
+
+\subsection*{System-Level Observations}
+
+In addition to traditional evaluation metrics, we assessed system-level performance to understand each model’s practicality and efficiency in real-world deployment.
+
+\begin{itemize}
+    \item \textbf{Training Time:} 
+    \begin{itemize}
+        \item Random Forest: 3 minutes and 42 seconds
+        \item XGBoost: 1 minute and 19 seconds
+        \item Neural Network: 1 minute and 3 seconds
+    \end{itemize}
+    The neural network benefited from early stopping and vectorized training, while XGBoost offered a good balance between speed and performance. Random Forest was the most computationally intensive during hyperparameter tuning.
+
+    \item \textbf{Inference Speed:} All models returned predictions for over 5,000 samples in under a second, enabling real-time or near real-time inference capability.
+
+    \item \textbf{Model Size:} All trained models were relatively lightweight and suitable for deployment in resource-constrained environments. The neural network had slightly higher memory usage due to its dense architecture.
+
+    \item \textbf{Reproducibility:} Fixed random seeds and stratified splits were applied across all models, ensuring consistent and repeatable results across runs.
+
+    \item \textbf{Modularity and Maintainability:} Despite being implemented within a single notebook, the project structure allowed clean transitions between preprocessing, model training, and evaluation. This streamlined experimentation and comparison across multiple models.
+
+    \item \textbf{Pipeline Efficiency:} End-to-end integration of feature engineering, model fitting, evaluation, and visualization was achieved in a unified, reusable structure—enabling efficient iterations and extensibility.
+\end{itemize}
+
+
+
+
+
+\end{document}
