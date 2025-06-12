@@ -1,6 +1,17 @@
 # 🎓 Predicting Student Depression Using Machine Learning
 
 This project applies machine learning to predict depression among university students using a dataset of 27,901 entries containing demographic, academic, and lifestyle-related variables.
+## 👥 Authors
+Amit Dvash
+
+Yuval Livshits
+
+Guy Korenfeld
+
+Tom Badash
+
+Einav Cohen
+
 
 ## 🔍 Research Question
 
@@ -64,8 +75,8 @@ All models were evaluated using:
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-repo/student-depression-ml.git
-   cd student-depression-ml
+   git clone https://github.com/guyko29/student-depression-model
+   cd Student Depression Prediction
    
 2. Create a virtual environment and install dependencies:
   ```bash
