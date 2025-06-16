@@ -35,9 +35,9 @@ Einav Cohen
 
 The following models were implemented:
 
-- `Random Forest` (GridSearchCV)
-- `XGBoost` (RandomizedSearchCV)
-- `Neural Network` (Keras Sequential, early stopping)
+- `Random Forest` 
+- `XGBoost` 
+- `Neural Network` 
 - `Ensemble Model` (Soft Voting)
 
 All models were evaluated using:
