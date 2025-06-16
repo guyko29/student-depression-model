@@ -76,12 +76,6 @@ All models were evaluated using:
 1. Clone the repository:
    ```bash
    git clone https://github.com/guyko29/student-depression-model
-   cd Student Depression Prediction
-   
-2. Create a virtual environment and install dependencies:
-  ```bash
-   python -m venv venv
-   source venv/bin/activate
+    
+2. Run the Student Depression Prediction.ipynb with python 3.9.13 version
 
-3. Run the Jupyter notebook:
-  jupyter notebook
